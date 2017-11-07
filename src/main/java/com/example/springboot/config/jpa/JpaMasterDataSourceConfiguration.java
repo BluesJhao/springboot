@@ -35,15 +35,15 @@ public class JpaMasterDataSourceConfiguration {
     @Resource(name = "primaryDataSource")
     private DataSource primaryDataSource;
 
-    @Primary
     @Bean(name = "master_entityManager")
+    @Primary
     public EntityManager entityManager(EntityManagerFactoryBuilder builder) {
         logger.info("Initializing Master EntityManager...");
         return entityManagerFactoryPrimary(builder).getObject().createEntityManager();
     }
 
-    @Primary
     @Bean(name = "master_entityManagerFactory")
+    @Primary
     public LocalContainerEntityManagerFactoryBean entityManagerFactoryPrimary (EntityManagerFactoryBuilder builder) {
         logger.info("Initializing Master LocalContainerEntityManagerFactoryBean...");
         return builder

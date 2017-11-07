@@ -71,7 +71,7 @@ public class PrimaryDataSourceConfiguration {
     @Bean(name = "primary_transactionManager")
     @Primary
     public PlatformTransactionManager transactionManager() throws SQLException {
-        logger.info("Initializing Primary DataSourceTransactionManager with datasource '{}'", dataSource());
+        logger.info("Initializing Primary DataSourceTransactionManager with datasource");
         return new DataSourceTransactionManager(dataSource());
     }
 

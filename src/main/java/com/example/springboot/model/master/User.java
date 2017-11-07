@@ -1,13 +1,16 @@
 package com.example.springboot.model.master;
 
+import com.alibaba.fastjson.JSON;
+
 import javax.persistence.*;
+import java.io.Serializable;
 
 /**
  * Desc ：User Bean
  * Created by JHAO on 2017/10/21.
  */
 @Entity
-public class User {
+public class User implements Serializable{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -40,10 +43,6 @@ public class User {
 
     @Override
     public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", userName='" + userName + '\'' +
-                ", password='" + password + '\'' +
-                '}';
+        return JSON.toJSONString(this);
     }
 }

@@ -58,6 +58,7 @@ public class UserService {
     //注：事务配置必须与对应数据源相匹配,此处需配置分布式事务
     @Transactional(transactionManager = "second_transactionManager",rollbackFor = Exception.class)
     public int insert(User user){
+        //此处应提供分布式事务
         userMapper.insert(user);
         userRepository.save(user);
         System.out.println(1/0);

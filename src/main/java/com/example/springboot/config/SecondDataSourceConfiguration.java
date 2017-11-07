@@ -70,7 +70,7 @@ public class SecondDataSourceConfiguration {
      */
     @Bean(name = "second_transactionManager")
     public PlatformTransactionManager transactionManager() throws SQLException {
-        logger.info("Initializing Second DataSourceTransactionManager with datasource '{}'", dataSource());
+        logger.info("Initializing Second DataSourceTransactionManager with datasource");
         return new DataSourceTransactionManager(dataSource());
     }
 
