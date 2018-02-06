@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/batch"
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:job="http://www.springframework.org/schema/batch"
+             xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/batch
+    http://www.springframework.org/schema/batch/spring-batch-3.0.xsd">
+
+    <!--Batch启动入口launch-->
+    <beans:bean id="jobLuncher" class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <beans:property name="jobRepository" ref="jobRepository"/>
+    </beans:bean>
+
+    <!--持久化Job, Step, Execution, Contex-->
+    <beans:bean id="jobRepository" class="org.springframework.batch.core.repository.support.JobRepositoryFactoryBean">
+        <beans:property name="databaseType" value="mysql"/>
+        <beans:property name="dataSource" ref="dataSource"/>
+        <beans:property name="isolationLevelForCreate" value="ISOLATION_REPEATABLE_READ"/>
+        <beans:property name="transactionManager" ref="transactionManager"/>
+    </beans:bean>
+
+    <beans:bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <beans:property name="dataSource" ref="dataSource"/>
+    </beans:bean>
+
+    <!--数据源MYSQL-->
+    <beans:bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <beans:property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <beans:property name="url" value="jdbc:mysql://10.143.117.20:3306/test?characterEncoding=UTF-8"/>
+        <beans:property name="username" value="guichulin"/>
+        <beans:property name="password" value="abc.com"/>
+    </beans:bean>
+
+    <!--
+        从数据库读取数据时：JdbcCursorItemReader与JdbcPagingItemReader方式不一样，共同点：都是按sql全量读
+        1, JdbcCursorItemReader：执行step->query DB->返回结果集ResultSet->reader(通过ResultSet和currentRow)获取每一条记录直到commit-interval->process->write
+        2, JdbcPagingItemReader：执行step->query DB->reader(分页读取数据存到List<T> results)获取每一条记录直到commit-interval->process->write
+    -->
+    <beans:bean id="jdbcReader" class="org.springframework.batch.item.database.JdbcPagingItemReader">
+        <beans:property name="dataSource" ref="dataSource"/>
+        <beans:property name="rowMapper">
+            <beans:bean class="org.springframework.jdbc.core.BeanPropertyRowMapper">
+                <beans:property name="mappedClass" value="hello.Person"/>
+            </beans:bean>
+        </beans:property>
+        <beans:property name="saveState" value="true"/>
+        <beans:property name="pageSize" value="2"/>
+        <beans:property name="maxItemCount" value="4"/><!--测试打开-->
+        <beans:property name="queryProvider">
+            <beans:bean class="org.springframework.batch.item.database.support.MySqlPagingQueryProvider">
+                <beans:property name="selectClause" value="select first_name,last_name,person_id"></beans:property>
+                <beans:property name="fromClause" value="from people"></beans:property>
+                <beans:property name="sortKeys">
+                    <beans:map key-type="java.lang.String" value-type="org.springframework.batch.item.database.Order">
+                        <beans:entry key="person_id" value="ASCENDING"></beans:entry>
+                    </beans:map>
+                </beans:property>
+            </beans:bean>
+        </beans:property>
+    </beans:bean>
+
+    <beans:bean id="itemProcessor" class="hello.PersonItemProcessor"/>
+
+    <beans:bean id="taskletTest" class="hello.Taskletest"/>
+
+    <beans:bean id="itemWriter" class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+        <beans:property name="dataSource" ref="dataSource"/>
+        <beans:property name="itemSqlParameterSourceProvider" ref="personItemParamProvider"/>
+        <beans:property name="sql" value="INSERT INTO people (first_name, last_name) VALUES (:firstName, :lastName)"/>
+    </beans:bean>
+
+    <beans:bean id="personItemParamProvider"
+                class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider"/>
+
+    <job:step-listener id="demo" on-process-error-method="afterStep">
+        <beans:bean id="listen" class="hello.StepListen"/>
+    </job:step-listener>
+
+    <beans:bean id="executor" class="hello.TaskExecutorHolder"/>
+    <!--
+       A：每个tasklet（chunk<reader->processor->writer>）的执行，是一个单独的事务，
+       B：Step提供了重启、事务、重启次数、并发数；Chunk提供了提交间隔、异常跳过、重试、完成策略等能力
+       1, allow-start-if-complete="true"： 如果step状态为completed，可以重新执行；默认跳过step
+       2, start-limit： 执行次数限制，默认无限次；commit-interval：在事务内每次提交的item的数据量()
+       3, transaction-manager ：提交写操作以事务执行,commit-interval已提交的item，将不会回滚
+       4, skip-limit：出现异常时每次跳过的item条数限制，须配合<job:skippable-exception-classes>可跳过的异常使用
+       5, retry-limit重试机制（一般为重试网络异常），只发生在【process和write】，reader不会重试，同样配合retryable配置使用
+       6, 当Step = ABANDONED放弃状态时，重启Job此step将不会被执行,Job状态也将会是FAILED
+       7, job和step都需要配置scope，需要配置命名空间xmlns:job="http://www.springframework.org/schema/batch
+       -->
+    <job:step id="parent" abstract="true">
+        <job:tasklet><!--标记abstract,将不会实例化-->
+            <chunk commit-interval="3"/>
+        </job:tasklet>
+    </job:step>
+    <job:job id="chunkJob" restartable="true" job-repository="jobRepository">
+        <!--tasklet(chunk) 内部流程：
+           1, render一条一条读取，满足commit-interval后，交由processor处理并提交
+        -->
+        <job:step id="step111" allow-start-if-complete="true" parent="parent" next="taskletstep">
+            <!--step有两种类型：1，chunk块处理类型；2，tasklet处理非reader->process->witer类型（不能包含chunk）
+                当使用task-executor标签时，每个chunk将以多线程执行（单个step的多个chunk，多个线程），需自己控制item的线程安全
+            -->
+            <job:tasklet start-limit="1000" transaction-manager="transactionManager">
+                <job:chunk reader="jdbcReader" processor="itemProcessor" writer="itemWriter">
+                </job:chunk>
+                <job:listeners merge="true">
+                    <listener ref="demo"/>
+                </job:listeners>
+            </job:tasklet>
+            <!--<next on="FAILED" to="taskletstep"/>-->
+        </job:step>
+        <job:step id="taskletstep">
+            <tasklet ref="taskletTest"/>
+        </job:step>
+    </job:job>
+    <job:job id="batchJob" restartable="true" job-repository="jobRepository">
+        <job:split id="concurrentExecute" next="step5" task-executor="executor">
+            <flow parent="flow1"/>
+            <flow parent="flow2"/>
+        </job:split>
+        <job:step id="step5" allow-start-if-complete="true">
+            <tasklet ref="taskletTest"/>
+        </job:step>
+    </job:job>
+    <!--定义flow:
+                1, 包含多个step的流处理,flow可被多个Job复用
+                2, 配合split标签，传递executor，让每个flow的step（没有先后顺序）并行执行
+        -->
+    <job:flow id="flow1">
+        <job:step id="step1" allow-start-if-complete="true">
+            <tasklet ref="taskletTest"/>
+            <next on="*" to="step2"/>
+        </job:step>
+        <job:step id="step2" allow-start-if-complete="true">
+            <tasklet ref="taskletTest"/>
+        </job:step>
+    </job:flow>
+    <job:flow id="flow2">
+        <job:step id="step3" allow-start-if-complete="true">
+            <tasklet ref="taskletTest"/>
+            <!--成功默认以end = COMPLETED结束JOB，失败默认以fail = FAILED结束JOB或者以stop。
+                如果end=FAILED ,step执行失败时，step status = FAILED ，job status = COMPLETED-->
+            <!--<fail on="COMPLETED"/>-->
+            <next on="*" to="step4"/>
+        </job:step>
+        <job:step id="step4" allow-start-if-complete="true">
+            <tasklet ref="taskletTest"/>
+            <end on="COMPLETED"/>
+        </job:step>
+    </job:flow>
+
+</beans:beans>
+

@@ -1,10 +1,7 @@
 package com.example.springboot.amqp.config;
 
 import com.example.springboot.amqp.common.ConstantMQ;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.DirectExchange;
-import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -101,14 +98,14 @@ public class RabbitMqConfiguration {
      * SimpleMessageConverter支持对象传输
      *
      */
-//    @Bean
-//    public MessageConverter messageConverter() {
-//        return new Jackson2JsonMessageConverter();//new SimpleMessageConverter();
-//    }
+    @Bean
+    public MessageConverter messageConverter() {
+        return new Jackson2JsonMessageConverter();//new SimpleMessageConverter();
+    }
 
     // 声明监听器
 //    @Bean
-//    SimpleMessageListenerContainer container(ConnectionFactory connectionFactory, Receiver listenerAdapter) {
+//    SimpleMessageListenerContainer container(ConnectionFactory connectionFactory, CustomReceiver listenerAdapter) {
 //
 //        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
 //        container.setConnectionFactory(connectionFactory);
@@ -120,15 +117,13 @@ public class RabbitMqConfiguration {
 //        return container;
 //    }
 
-
-
     // 在spring容器中添加消费者监听
 //    @Bean
-//    Receiver receiver() {
-//        return new Receiver();
+//    CustomReceiver receiver() {
+//        return new CustomReceiver();
 //    }
-
-    //    @Bean
+//
+//    @Bean
 //    public AmqpAdmin amqpAdmin(ConnectionFactory connectionFactory) {
 //        return new RabbitAdmin(connectionFactory);
 //    }

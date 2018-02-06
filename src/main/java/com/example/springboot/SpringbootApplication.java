@@ -15,7 +15,7 @@ import org.springframework.context.ApplicationContext;
  * @ComponentScan
  */
 @SpringBootApplication
-@ServletComponentScan(basePackages = {"com.example.springboot.web"})
+@ServletComponentScan
 public class SpringbootApplication implements ApplicationRunner{
 
 	public static void main(String[] args) {

@@ -6,7 +6,10 @@
     <groupId>com.example</groupId>
     <artifactId>springboot</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <modules>
+        <module>springBatch</module>
+    </modules>
+    <packaging>pom</packaging>
 
     <name>springboot</name>
     <description>Springboot project for Spring Boot</description>
@@ -91,6 +94,16 @@
             <artifactId>fastjson</artifactId>
             <version>1.2.29</version>
         </dependency>
+        <!--sending email-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
         <!--配置Log日志 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -105,6 +118,21 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.4</version>
+        </dependency>
+        <!-- Maven batch-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-batch</artifactId>
         </dependency>
     </dependencies>
 

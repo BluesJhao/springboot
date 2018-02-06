@@ -17,7 +17,6 @@ import javax.annotation.Resource;
  * Desc ：Producer
  * Created by JHAO on 2017/11/3.
  */
-@EnableRetry
 @Component
 public class PrimaryProducer implements RabbitTemplate.ConfirmCallback, RabbitTemplate.ReturnCallback{
 
@@ -30,18 +29,23 @@ public class PrimaryProducer implements RabbitTemplate.ConfirmCallback, RabbitTe
     @PostConstruct
     public void initRabbitMQConfiguration() throws InterruptedException {
         //此段代码可在RabbitMqConfiguration中配置,只针对消息发送，消息接受只需配置监听器即可
-        DirectExchange directEx = new DirectExchange(ConstantMQ.TEST_EXCHANGE_NAME);
+//        DirectExchange directEx = new DirectExchange(ConstantMQ.TEST_EXCHANGE_NAME);//Direct类型Exchange
+        //TOPIC类型Exchange按规则转发; 此外Fanout类型以广播方式分发，无需绑定Rounting key
+        TopicExchange topicEx = new TopicExchange(ConstantMQ.TOPIC_EXCHANGE_NAME);
         Queue queue = new Queue(ConstantMQ.TEST_QUEUE_NAME, true);//默认就是持久化
-        amqpAdmin.declareExchange(directEx);
+        amqpAdmin.declareExchange(topicEx);
         amqpAdmin.declareQueue(queue);
-        amqpAdmin.declareBinding(BindingBuilder.bind(queue).to(directEx).with(ConstantMQ.ROUTING_KEY));
+        //amqpAdmin.declareBinding(BindingBuilder.bind(queue).to(directEx).with(ConstantMQ.ROUTING_KEY));
+        amqpAdmin.declareBinding(BindingBuilder.bind(queue).to(topicEx).with(ConstantMQ.TOPIC_ROUTING_KEY));
         ((RabbitTemplate)amqpTemplate).setConfirmCallback(this);//设置生产者与队列的回调
         ((RabbitTemplate)amqpTemplate).setReturnCallback(this);
     }
 
     public void send(String routKey, Object object){
-
-        amqpTemplate.convertAndSend(ConstantMQ.TEST_EXCHANGE_NAME,routKey, object);
+        //Direct 规则
+//        amqpTemplate.convertAndSend(ConstantMQ.TEST_EXCHANGE_NAME,routKey, object);
+        //TOPIC 规则(Routing key通过xxx.#或xxx.*进行匹配xxx后面的字符)
+        amqpTemplate.convertAndSend(ConstantMQ.TOPIC_EXCHANGE_NAME,routKey, object);
         //correlationData是回调时传入回调方法的参数，因此通过这个属性来区分消息，并进行重发。
 //        CorrelationData correlationData = new CorrelationData("123");
 //        ((RabbitTemplate)amqpTemplate).convertAndSend(routKey, object, correlationData);

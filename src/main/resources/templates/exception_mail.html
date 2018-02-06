@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta charset="UTF-8"/>
+        <title>Title</title>
+    </head>
+    <body>
+        <p>你好，<span th:text="${clazzName}"/>类 <span th:text="${method}"/>方法 出现异常！</p>
+        <p>异常信息如下:</p>
+        <p th:text="${exception}">异常信息</p>
+        <p>(这是一封自动产生的email，请勿回复。)</p>
+        <span>国美金控， </span><span th:text="${sendTime}">发送时间</span>
+        <span th:text="${clazzName}"/>类
+    </body>
+</html>
+

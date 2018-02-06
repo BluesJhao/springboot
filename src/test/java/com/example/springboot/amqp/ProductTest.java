@@ -27,6 +27,6 @@ public class ProductTest {
         user.setId(123);
         user.setUserName("foo1");
         user.setPassword("*********");
-        primaryProducer.send(ConstantMQ.ROUTING_KEY,user);
+        primaryProducer.send("topic.1231231",user);
     }
 }

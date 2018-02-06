@@ -7,10 +7,10 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.ChannelAwareMessageListener;
 
 /**
- * Desc ：Receiver Listener
+ * Desc ：Custom Listener
  * Created by JHAO on 2017/11/6.
  */
-public class Receiver implements ChannelAwareMessageListener {
+public class CustomReceiver implements ChannelAwareMessageListener {
 
     @Override
     public void onMessage(Message message, Channel channel) throws Exception {
